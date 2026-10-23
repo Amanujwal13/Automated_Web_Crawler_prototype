@@ -6,3 +6,10 @@ coverage/
 *.log
 .env*
 !.env.example
+crawl.db
+crawler/crawl.db
+crawler/output/
+.pytest_cache/
+crawler/.pytest_cache/
+.aistudio/
+bun.lock

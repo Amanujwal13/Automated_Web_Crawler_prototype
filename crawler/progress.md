@@ -173,7 +173,22 @@ This document tracks every milestone completed for the **Web Crawler Prototype (
 - **Styling Deliverables**:
   - Integrated `#EBE2CC` (warm parchment cream) in `src/index.css` (`--color-brand-cream: #EBE2CC`).
   - Applied `#EBE2CC` to header titles, extraction bar labels, preset chips, book card titles, prices, UPC codes, and action buttons.
-- **Commit**: `fix: guard /api routes with 404 JSON handler and integrate #EBE2CC color palette`
+- **Commit**: `fix: guard /api routes with 404 JSON handler and integrate #EBE2CC color palette` (`e8e3666`)
+
+---
+
+## Milestone 11: Comprehensive Root README Documentation
+- **Objective**: Provide comprehensive root-level project documentation bridging the Web Studio, API architecture, and crawler backend.
+- **Deliverables**:
+  - `README.md` (root directory):
+    - Full-stack project overview with target scope boundaries (`books.toscrape.com`).
+    - Color palette reference (`#4C2365`, `#7F5D99`, `#9E7EB5`, `#C4A4DA`, `#EBE2CC`).
+    - Web Interaction features guide (extraction bar, local drive download, live logs, test runner).
+    - Setup & installation instructions for Node.js and Python.
+    - CLI execution commands (`--urls`, `--resume`, and exit code definitions).
+    - Offline test suite breakdown across all 32 unit tests.
+    - Complete directory file tree mapping root and `crawler/` files.
+- **Commit**: `docs: add comprehensive root README.md documentation`
 
 ---
 
@@ -191,4 +206,5 @@ This document tracks every milestone completed for the **Web Crawler Prototype (
 | `ce61636` | `docs` | `add progress.md tracking all completed Stage 1 steps and milestones` |
 | `8d07ded` | `feat` | `add api_bridge and update progress.md with milestone 8` |
 | `cd2444d` | `feat` | `add prominent paste bar, local download buttons, and purple palette` |
-| `HEAD`    | `fix` | `guard /api routes with 404 JSON handler and integrate #EBE2CC color palette` |
+| `e8e3666` | `fix` | `guard /api routes with 404 JSON handler and integrate #EBE2CC color palette` |
+| `HEAD`    | `docs` | `add comprehensive root README.md documentation` |
