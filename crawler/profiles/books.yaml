@@ -1,0 +1,19 @@
+name: books
+domains: [books.toscrape.com]
+record_type: Book
+fields:
+  title:
+    selector: "div.product_main h1"
+    attr: text
+    required: true
+  price:
+    selector: "p.price_color"
+    attr: text
+    required: false
+  upc:
+    table_row: "UPC"
+    required: false
+  availability:
+    selector: "p.availability"
+    attr: text
+    required: false

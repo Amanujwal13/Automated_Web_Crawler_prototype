@@ -1,0 +1,10 @@
+db_path: crawl.db
+output_root: output
+profile: profiles/books.yaml
+request_delay_seconds: 3.0
+page_timeout_seconds: 30
+user_agent: "CrawlerPrototype/0.1 (+contact: your-email-here)"
+viewport: {width: 1280, height: 800}
+block_resource_types: [image, media, font]
+clean:
+  strip_tags: [script, style, svg, noscript, nav, footer]

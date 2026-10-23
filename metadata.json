@@ -1,0 +1,6 @@
+{
+  "name": "Books Crawler Studio",
+  "description": "Interactive rule-based web crawler for books.toscrape.com with real-time run logs, SQLite state, and JSON dataset exports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

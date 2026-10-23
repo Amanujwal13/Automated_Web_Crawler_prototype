@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+crawl.db
+output/
+.venv/
+env/
+venv/
+*.log
