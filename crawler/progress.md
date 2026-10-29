@@ -188,7 +188,27 @@ This document tracks every milestone completed for the **Web Crawler Prototype (
     - CLI execution commands (`--urls`, `--resume`, and exit code definitions).
     - Offline test suite breakdown across all 32 unit tests.
     - Complete directory file tree mapping root and `crawler/` files.
-- **Commit**: `docs: add comprehensive root README.md documentation`
+- **Commit**: `docs: add comprehensive root README.md documentation` (`cefa5a8`)
+
+---
+
+## Milestone 12: Code Analysis & Hardening Resolutions (Report Findings)
+- **Objective**: Address and resolve critical bugs, security protections, and architecture concerns identified in the code analysis audit (`report.md`) without departing from Stage 1 scope.
+- **Deliverables**:
+  - **[C1] UI Double-Fetch Elimination (`src/App.tsx`)**: Replaced broken `safeJsonFetch(res.url)` in `handleStartCrawl` and `handleResume` with direct parsing of the POST response `await res.json()`.
+  - **[C2] Unified Async Event Loop (`crawler/main.py`)**: Migrated sequential crawl loop from per-URL `asyncio.run()` to top-level `asyncio.run(async_main())` using async/await throughout.
+  - **[C3] Cross-Platform Python Execution (`server.ts`)**: Auto-detects `python` on Windows and `python3` on Linux/macOS via `process.platform === 'win32'`.
+  - **[S1] Path Traversal Validation (`server.ts`)**: Added strict regex `^\d{8}-\d{6}-[0-9a-f]{4}$` validation to `/api/runs/:id`, `/api/runs/:id/log`, and `/api/runs/:id/data`.
+  - **[C5] Database DDL Separation (`crawler/store.py`)**: Split schema creation into `init_db(db_path)`, removing hundreds of redundant `CREATE TABLE` executions on every store query.
+  - **[C6] Atomic Output Directory Generation (`crawler/main.py`)**: Removed `"temp_placeholder"` race condition; generates `run_id` and output directory directly before database insertion.
+  - **[C4] Thread-Safe Robots Cache (`crawler/robots.py`)**: Added `threading.Lock` and TTL-based cache expiration.
+  - **[Q1] Unmasked Navigation Errors (`crawler/fetcher.py`)**: Replaced `status = response.status if response else 200` with explicit `FetchFailed` when `response is None`.
+  - **[A2 & F5] Native CSV Exporter (`crawler/exporters.py` & `src/App.tsx`)**: Implemented Python-side `export_csv(records, output_dir)` and verified `final_url` in all CSV headers.
+  - **[A3] Unified DB Connections (`crawler/api_bridge.py`)**: Reused `store.py::get_connection()` to guarantee `PRAGMA foreign_keys = ON;`.
+  - **[A4] Universal Test Discovery (`crawler/conftest.py`)**: Created `conftest.py` ensuring `sys.path` allows tests to run from root or `crawler/`.
+  - **[T4 & T5] Extended Test Coverage**: Added `tests/test_config.py` (3 tests) and `tests/test_profiles.py` (2 tests), expanding total test suite to **39 passing unit tests** (100% pass rate).
+  - **[S4 & D2] Configuration & Package Cleanups**: Updated `config.yaml` user-agent to compliant contact bot, and renamed `package.json` to `books-crawler-studio`.
+- **Commit**: `fix: resolve report.md audit findings and expand unit tests to 39`
 
 ---
 
@@ -207,4 +227,72 @@ This document tracks every milestone completed for the **Web Crawler Prototype (
 | `8d07ded` | `feat` | `add api_bridge and update progress.md with milestone 8` |
 | `cd2444d` | `feat` | `add prominent paste bar, local download buttons, and purple palette` |
 | `e8e3666` | `fix` | `guard /api routes with 404 JSON handler and integrate #EBE2CC color palette` |
-| `HEAD`    | `docs` | `add comprehensive root README.md documentation` |
+| `cefa5a8` | `docs` | `add comprehensive root README.md documentation` |
+| `HEAD`    | `feat` | `complete Stage 2 implementation with generic extraction, excel exports, and live task checklist` |
+
+---
+
+## Stage 2 Implementation Progress & Deliverables
+
+### Milestone 13: Stage 2 Scaffolding & Multi-Format Exporters
+- **Objective**: Implement native Excel (`.xlsx`) generation via `openpyxl`, enhanced CSV formatting with all dynamic fields, and automated `summary.txt` report generation.
+- **Deliverables**:
+  - `crawler/requirements.txt`: Added `openpyxl==3.1.5`.
+  - `crawler/exporters.py`: Added `export_excel()`, `export_summary()`, and `export_all()` generating `data.json`, `data.csv`, `data.xlsx` (with `Records`, `Extracted Tables`, and `Metadata` sheets), and `summary.txt`.
+  - `crawler/tests/test_stage2_exporters.py`: Added unit tests verifying multi-sheet Excel workbooks and summary reports.
+
+### Milestone 14: Generic Heuristic Extractor Module
+- **Objective**: Enable universal content extraction for arbitrary non-profile websites.
+- **Deliverables**:
+  - `crawler/generic_extractor.py`:
+    - Title discovery cascading: OpenGraph -> Twitter -> `<article> <h1>` -> first `<h1>` -> `<title>`.
+    - Byline and publication date extraction from metadata and semantic HTML5 `<time>` tags.
+    - Paragraph text density scoring algorithm for main content body extraction.
+    - `extract_tables()` parsing HTML `<table>` elements into structured rows, headers, and captions.
+  - `crawler/tests/test_generic_extractor.py`: Unit tests validating metadata, paragraphs, and HTML table extraction.
+
+### Milestone 15: Gemini LLM Fallback Client
+- **Objective**: Provide AI fallback via `gemini-3.8-flash` when rule-based or heuristic extractors leave target fields empty.
+- **Deliverables**:
+  - `crawler/llm_client.py`:
+    - Integrated with Google Gemini REST API using `gemini-3.8-flash`.
+    - Strict environment variable handling (`GEMINI_API_KEY`), never hardcoded.
+    - Disabled by default; activated via `--llm` CLI flag or UI toggle.
+    - Truncated text prompting requesting strictly structured JSON.
+  - `crawler/tests/test_llm_client.py`: Offline mocked unit tests verifying error recovery and payload parsing.
+
+### Milestone 16: Pipeline Unification & Stage 2 CLI Flags
+- **Objective**: Support single/multi-URL positional arguments, dynamic page scrolling, rate limit backoff, and failure recovery.
+- **Deliverables**:
+  - `crawler/extractors.py`: Unified `extract_auto()` delegating to profile rules if matched, or generic heuristic extraction with optional LLM fallback if unmatched.
+  - `crawler/fetcher.py`: Added optional dynamic scrolling (`--scroll`) to load dynamic content below the fold, and 429 backoff retry loops.
+  - `crawler/store.py`: Added `retry_failed()` to reset failed URLs back to pending.
+  - `crawler/main.py`: Full Stage 2 CLI supporting `python main.py <url> ...`, `--urls <file>`, `--resume <run_id>`, `--llm`, `--retry-failed`, and `--scroll`.
+
+### Milestone 17: Full-Stack Web Checklist Integration & API Bridge
+- **Objective**: Synchronize Stage 2 capabilities and an interactive task checklist with the React dashboard.
+- **Deliverables**:
+  - `server.ts`: Added `/api/tasks/checklist`, `/api/runs/:id/csv`, `/api/runs/:id/excel`, `/api/runs/:id/summary`, and support for `--llm` and `--scroll` flags in `/api/crawl`.
+  - `src/App.tsx`:
+    - Built prominent **Live Task Checklist Widget** with progress bar, completion checkboxes `[x]` / `[ ]`, and "Look at Completed Tasks" filter.
+    - Added Stage 2 toggles: Gemini AI Fallback (`--llm`), Auto-Scroll (`--scroll`), and Retry Failed.
+    - Multi-format download actions (JSON, CSV, Excel, summary report).
+    - Preserved `#4C2365` / `#7F5D99` / `#9E7EB5` / `#C4A4DA` / `#EBE2CC` color palette.
+
+---
+
+## Complete Engineering Task Checklist (Stage 1 & Stage 2)
+
+- [x] **Task 1: Project Scaffolding & Dependencies** (`crawler/requirements.txt`, `config.yaml`, `conftest.py`)
+- [x] **Task 2: Network Safety & SSRF Protection** (`crawler/urlcheck.py` resolving hostnames and blocking private/loopback IPs)
+- [x] **Task 3: Robots.txt Compliance & Politeness** (`crawler/robots.py` per-host cache with TTL and polite delays)
+- [x] **Task 4: Practice Site Rule Profile** (`crawler/profiles/books.yaml` CSS & table row rules for books.toscrape.com)
+- [x] **Task 5: Resumable SQLite Database Storage** (`crawler/store.py` with `runs` and `urls` schema and parameterization)
+- [x] **Task 6: Multi-Format Exporters Suite** (`crawler/exporters.py` exporting JSON, CSV, multi-sheet Excel, and summary.txt)
+- [x] **Task 7: Generic Heuristic Extractor** (`crawler/generic_extractor.py` text density scoring, tables, and metadata discovery)
+- [x] **Task 8: Optional Gemini LLM Fallback Client** (`crawler/llm_client.py` using `gemini-3.8-flash` via `GEMINI_API_KEY`)
+- [x] **Task 9: Single-URL, Scroll & Retry CLI Flags** (`crawler/main.py` positional URLs, `--llm`, `--scroll`, `--retry-failed`)
+- [x] **Task 10: Interactive Web Task Checklist & Console** (`src/App.tsx` live checklist widget, Excel download, dual-mode UI)
+- [x] **Task 11: Expanded Pytest Offline Verification** (47/47 passing tests across all Stage 1 & Stage 2 modules)
+- [x] **Task 12: Stage 2 Transition Log & Documentation** (`crawler/docs/changes.md` & `crawler/progress.md`)
+

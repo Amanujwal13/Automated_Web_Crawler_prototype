@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import threading
+import time
 import urllib.error
 import urllib.request
 from urllib.parse import urlparse
 from urllib.robotparser import RobotFileParser
 
 
-_ROBOTS_CACHE: dict[str, RobotFileParser | bool] = {}
+_CACHE_LOCK = threading.Lock()
+_ROBOTS_CACHE: dict[str, tuple[RobotFileParser | bool, float]] = {}
+DEFAULT_TTL_SECONDS = 3600.0
 
 
 def _get_robots_url(parsed_url) -> str:
@@ -33,20 +37,32 @@ def _fetch_robot_parser(robots_url: str, user_agent: str) -> RobotFileParser | b
         return False  # Disallowed on connection/timeout error
 
 
-def is_allowed(url: str, user_agent: str) -> bool:
+def is_allowed(url: str, user_agent: str, ttl_seconds: float = DEFAULT_TTL_SECONDS) -> bool:
     parsed = urlparse(url)
     key = f"{parsed.scheme}://{parsed.netloc}"
+    now = time.time()
 
-    if key not in _ROBOTS_CACHE:
-        robots_url = _get_robots_url(parsed)
-        _ROBOTS_CACHE[key] = _fetch_robot_parser(robots_url, user_agent)
+    with _CACHE_LOCK:
+        if key in _ROBOTS_CACHE:
+            cached_val, ts = _ROBOTS_CACHE[key]
+            if (now - ts) < ttl_seconds:
+                if isinstance(cached_val, bool):
+                    return cached_val
+                return cached_val.can_fetch(user_agent, url)
 
-    cached = _ROBOTS_CACHE[key]
-    if isinstance(cached, bool):
-        return cached
+    # Fetch outside lock to prevent blocking during network I/O
+    robots_url = _get_robots_url(parsed)
+    parser = _fetch_robot_parser(robots_url, user_agent)
 
-    return cached.can_fetch(user_agent, url)
+    with _CACHE_LOCK:
+        _ROBOTS_CACHE[key] = (parser, now)
+
+    if isinstance(parser, bool):
+        return parser
+
+    return parser.can_fetch(user_agent, url)
 
 
 def clear_robots_cache() -> None:
-    _ROBOTS_CACHE.clear()
+    with _CACHE_LOCK:
+        _ROBOTS_CACHE.clear()

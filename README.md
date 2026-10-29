@@ -96,7 +96,7 @@ python3 main.py --resume 20261023-120154-0432
 
 ## 🧪 Testing
 
-Execute the comprehensive 32-test offline unit test suite:
+Execute the comprehensive 39-test offline unit test suite:
 ```bash
 cd crawler
 python3 -m pytest -v
@@ -107,8 +107,10 @@ python3 -m pytest -v
 - `tests/test_robots.py` (6 tests): Allowed/disallowed parsing, 404 permitted, 401/403 blocked, and host caching.
 - `tests/test_cleaner.py` (1 test): Stripping script, style, nav, footer, svg tags while preserving visible text.
 - `tests/test_extractors.py` (2 tests): Verifies extractions against live fixture `book_1.html` and ground truth `book_1.expected.json`, plus missing field exceptions.
+- `tests/test_config.py` (3 tests): Configuration validation, missing keys, and positive viewport dimensions.
+- `tests/test_profiles.py` (2 tests): Profile loading, domain/subdomain matching, and unknown rule rejection.
 - `tests/test_store.py` (4 tests): SQLite schema initialization, status transitions, resumption query filters, and SQL injection safety.
-- `tests/test_exporters.py` (3 tests): Valid UTF-8 JSON formatting, empty array export, and overwrite protections.
+- `tests/test_exporters.py` (5 tests): Valid UTF-8 JSON formatting, CSV export with headers & final_url, empty array export, and overwrite protections.
 
 ---
 

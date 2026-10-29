@@ -19,6 +19,19 @@ class FieldRule:
     table_row: str | None = None
 
 
+def matches_domain(host: str, domains: list[str]) -> bool:
+    clean_host = host.lower().strip()
+    if clean_host.startswith("www."):
+        clean_host = clean_host[4:]
+    for domain in domains:
+        target = domain.lower().strip()
+        if target.startswith("www."):
+            target = target[4:]
+        if clean_host == target or clean_host.endswith(f".{target}"):
+            return True
+    return False
+
+
 @dataclass(frozen=True)
 class Profile:
     name: str
@@ -29,16 +42,7 @@ class Profile:
     source_path: Path
 
     def matches_domain(self, host: str) -> bool:
-        clean_host = host.lower().strip()
-        if clean_host.startswith("www."):
-            clean_host = clean_host[4:]
-        for domain in self.domains:
-            target = domain.lower().strip()
-            if target.startswith("www."):
-                target = target[4:]
-            if clean_host == target or clean_host.endswith(f".{target}"):
-                return True
-        return False
+        return matches_domain(host, self.domains)
 
 
 def _parse_field_rule(field_name: str, raw: Any, file_name: str) -> FieldRule:
@@ -112,3 +116,26 @@ def load_profile(path: Path | str) -> Profile:
         model=model,
         source_path=profile_path,
     )
+
+
+def load_profiles_dir(dir_path: Path | str) -> list[Profile]:
+    """Loads all valid .yaml and .yml profile files from a directory."""
+    path = Path(dir_path)
+    if not path.is_dir():
+        return []
+    profiles: list[Profile] = []
+    for f in sorted(path.iterdir()):
+        if f.is_file() and f.suffix in (".yaml", ".yml"):
+            try:
+                profiles.append(load_profile(f))
+            except Exception:
+                pass
+    return profiles
+
+
+def find_profile_for_domain(host: str, profiles: list[Profile]) -> Profile | None:
+    """Finds the first matching Profile for the given domain/host."""
+    for p in profiles:
+        if p.matches_domain(host):
+            return p
+    return None

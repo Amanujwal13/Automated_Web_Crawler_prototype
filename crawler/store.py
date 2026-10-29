@@ -27,12 +27,28 @@ CREATE TABLE IF NOT EXISTS urls (
 """
 
 
-def get_connection(db_path: Path | str = "crawl.db") -> sqlite3.Connection:
+_DB_INITIALIZED: set[str] = set()
+
+
+def init_db(db_path: Path | str = "crawl.db") -> None:
     path = Path(db_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(path))
+    try:
+        conn.execute("PRAGMA foreign_keys = ON;")
+        conn.executescript(SCHEMA)
+    finally:
+        conn.close()
+    _DB_INITIALIZED.add(str(path.resolve()))
+
+
+def get_connection(db_path: Path | str = "crawl.db") -> sqlite3.Connection:
+    path = Path(db_path)
+    resolved_str = str(path.resolve())
+    if resolved_str not in _DB_INITIALIZED:
+        init_db(path)
+    conn = sqlite3.connect(str(path))
     conn.execute("PRAGMA foreign_keys = ON;")
-    conn.executescript(SCHEMA)
     return conn
 
 
@@ -42,16 +58,20 @@ def generate_run_id() -> str:
     return f"{now_str}-{suffix}"
 
 
-def create_run(output_dir: Path | str, db_path: Path | str = "crawl.db") -> str:
-    run_id = generate_run_id()
+def create_run(
+    output_dir: Path | str,
+    db_path: Path | str = "crawl.db",
+    run_id: str | None = None,
+) -> str:
+    selected_id = run_id or generate_run_id()
     created_at = datetime.now(timezone.utc).isoformat()
     out_str = str(Path(output_dir))
     with get_connection(db_path) as conn:
         conn.execute(
             "INSERT INTO runs (id, created_at, output_dir) VALUES (?, ?, ?);",
-            (run_id, created_at, out_str),
+            (selected_id, created_at, out_str),
         )
-    return run_id
+    return selected_id
 
 
 def add_urls(run_id: str, urls: list[str], db_path: Path | str = "crawl.db") -> None:
@@ -148,3 +168,20 @@ def records(run_id: str, db_path: Path | str = "crawl.db") -> list[dict[str, Any
             except json.JSONDecodeError:
                 continue
         return results
+
+
+def retry_failed(run_id: str, db_path: Path | str = "crawl.db") -> int:
+    """Resets failed URLs back to 'pending' state for re-crawling."""
+    with get_connection(db_path) as conn:
+        cursor = conn.execute(
+            """
+            UPDATE urls
+            SET status = 'pending',
+                error = NULL,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE run_id = ? AND status = 'failed';
+            """,
+            (run_id,),
+        )
+        return cursor.rowcount
+

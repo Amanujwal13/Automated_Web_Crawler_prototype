@@ -7,9 +7,12 @@ import subprocess
 import sys
 
 
+from store import get_connection
+
+
 def get_db_connection() -> sqlite3.Connection:
     db_path = Path(__file__).parent / "crawl.db"
-    conn = sqlite3.connect(str(db_path))
+    conn = get_connection(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -124,6 +127,30 @@ def run_tests() -> dict:
     }
 
 
+def list_profiles() -> list[dict]:
+    from profiles import load_profiles_dir
+    p_dir = Path(__file__).parent / "profiles"
+    loaded = load_profiles_dir(p_dir)
+    return [
+        {
+            "name": p.name,
+            "domains": p.domains,
+            "record_type": p.record_type,
+            "fields": {
+                fname: {
+                    "selector": rule.selector,
+                    "attr": rule.attr,
+                    "table_row": rule.table_row,
+                    "required": rule.required,
+                }
+                for fname, rule in p.fields.items()
+            },
+            "source_file": p.source_path.name,
+        }
+        for p in loaded
+    ]
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print(json.dumps({"error": "Missing action"}))
@@ -136,5 +163,7 @@ if __name__ == "__main__":
         print(json.dumps(get_run_detail(sys.argv[2])))
     elif action == "run-tests":
         print(json.dumps(run_tests()))
+    elif action == "profiles":
+        print(json.dumps(list_profiles()))
     else:
         print(json.dumps({"error": f"Unknown action: {action}"}))

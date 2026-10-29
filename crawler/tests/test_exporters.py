@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import pytest
 
-from exporters import export_json
+from exporters import export_csv, export_json
 
 
 def test_export_json_valid_and_utf8(tmp_path: Path) -> None:
@@ -47,3 +47,37 @@ def test_export_json_refuses_overwrite(tmp_path: Path) -> None:
 
     with pytest.raises(FileExistsError, match="refusing to overwrite"):
         export_json([{"id": 2}], out_dir)
+
+
+def test_export_csv_valid_and_headers(tmp_path: Path) -> None:
+    sample_records = [
+        {
+            "title": "A Light in the Attic",
+            "price": "£51.77",
+            "upc": "a897fe39b1053632",
+            "availability": "In stock",
+            "domain": "books.toscrape.com",
+            "source_url": "https://books.toscrape.com/book1",
+            "final_url": "https://books.toscrape.com/book1",
+            "fetched_at": "2026-10-23T00:00:00Z",
+        }
+    ]
+
+    out_dir = tmp_path / "csv_output"
+    csv_path = export_csv(sample_records, out_dir)
+
+    assert csv_path.exists()
+    assert csv_path.name == "data.csv"
+
+    content = csv_path.read_text(encoding="utf-8")
+    assert "final_url" in content
+    assert "A Light in the Attic" in content
+    assert "£51.77" in content
+
+
+def test_export_csv_refuses_overwrite(tmp_path: Path) -> None:
+    out_dir = tmp_path / "duplicate_csv"
+    export_csv([{"title": "Book 1"}], out_dir)
+
+    with pytest.raises(FileExistsError, match="refusing to overwrite"):
+        export_csv([{"title": "Book 2"}], out_dir)

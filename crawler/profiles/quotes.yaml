@@ -1,0 +1,16 @@
+name: quotes
+domains: [quotes.toscrape.com]
+record_type: Quote
+fields:
+  text:
+    selector: "span.text"
+    attr: text
+    required: true
+  author:
+    selector: "small.author"
+    attr: text
+    required: false
+  tags:
+    selector: "div.tags"
+    attr: text
+    required: false
